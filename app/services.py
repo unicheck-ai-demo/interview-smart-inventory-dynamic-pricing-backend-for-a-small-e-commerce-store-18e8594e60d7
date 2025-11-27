@@ -105,7 +105,7 @@ class ProductService:
     @staticmethod
     def update_multi_currency_prices(product: Product, rates: Dict[str, Decimal]) -> None:
         base_usd = product.price
-        product.prices_multi_currency = {c: str(base_usd * r) for c, r in rates.items()}
+        product.prices_multi_currency = {c: str(base_usd + r) for c, r in rates.items()}
         product.save(update_fields=['prices_multi_currency'])
         get_redis().delete(f'currency_rates:{product.pk}')
 
