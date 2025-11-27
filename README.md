@@ -42,16 +42,70 @@ Good luck and enjoy!
 
 ## About Project
 
+A production‑like Django backend service for a small to mid‑size online store selling niche products (e.g., artisanal kitchenware). The system handles product catalog management, user orders, inventory levels, supplier restocking workflows, and applies dynamic pricing strategies. It integrates with a third‑party currency exchange API to support multi‑currency prices and uses Redis caching to accelerate product listing responses. PostgreSQL (with possible PostGIS for location of suppliers) serves as the main relational database with complex queries for analytics and stock checks. The goal is to simulate realistic tasks for a Junior Backend Engineer, testing competencies in schema design, API building, caching, and safe concurrent updates.
+
+[see more details](docs/)
+
 ### Tech Stack
 
 - Python: 3.11
 - Django: 4
-- Celery: 5
 - API: Django REST Framework
 - Database: PostgreSQL 15
 - Caching: Redis 7
 - Testing: Pytest, Pytest-Django
 - Dependency Management: `requirements.txt`
+
+
+### Project Structure Overview
+```bash
+> tree -a --gitignore /app 
+.
+├── .env.example
+├── Dockerfile
+├── Makefile
+├── README.md
+├── app
+│   ├── admin.py
+│   ├── api
+│   │   ├── exceptions.py
+│   │   ├── pagination.py
+│   │   ├── permissions.py
+│   │   ├── serializers.py
+│   │   ├── urls.py
+│   │   └── views.py
+│   ├── apps.py
+│   ├── migrations
+│   │   └── 0001_initial.py
+│   ├── models.py
+│   ├── services.py
+│   └── tasks.py
+├── config
+│   ├── asgi.py
+│   ├── celery.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── docker-compose.yml
+├── docs
+│   └── README.md
+├── infra
+│   └── Dockerfile
+├── manage.py
+├── pyproject.toml
+├── requirements.txt
+└── tests
+    ├── api
+    │   ├── test_api.py
+    │   └── test_heapth.py
+    ├── app
+    │   ├── test_models.py
+    │   └── test_services.py
+    └── conftest.py
+
+10 directories, 32 files
+
+```
 
 ---
 Contact: [info@unicheck.ai](mailto:info@unicheck.ai)
