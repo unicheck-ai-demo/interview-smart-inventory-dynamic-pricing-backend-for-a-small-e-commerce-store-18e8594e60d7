@@ -1,11 +1,18 @@
 from django.db import DatabaseError, connection
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from app.models import Category, CustomerProfile, Order, Product, SupplierProfile
-from app.services import CustomerProfileService, OrderService
+from app.services import (
+    AnalyticsService,
+    CurrencyService,
+    CustomerProfileService,
+    OrderService,
+    ProductService,
+)
 
 from .serializers import (
     CategorySerializer,
@@ -44,6 +51,29 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+    @action(detail=True, methods=['post'], url_path='dynamic-pricing')
+    def dynamic_pricing(self, request, pk=None):
+        product = self.get_object()
+        demand = int(request.data.get('demand', 0))
+        try:
+            new_price = ProductService.dynamic_pricing(product, demand)
+            serializer = self.get_serializer(product)
+            return Response({'new_price': str(new_price), 'product': serializer.data})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='update-currency-prices')
+    def update_currency_prices(self, request, pk=None):
+        product = self.get_object()
+        symbols = request.data.get('currencies', ['EUR', 'GBP'])
+        try:
+            rates = CurrencyService.fetch_rates_cached('USD', symbols)
+            ProductService.update_multi_currency_prices(product, rates)
+            serializer = self.get_serializer(product)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CustomerProfileViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CustomerProfile.objects.select_related('user').all()
@@ -67,3 +97,19 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request, pk=None):
+        try:
+            OrderService.cancel_order(int(pk))
+            return Response({'status': 'canceled'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AnalyticsView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        data = AnalyticsService.stock_and_sales_report()
+        return Response(data)
