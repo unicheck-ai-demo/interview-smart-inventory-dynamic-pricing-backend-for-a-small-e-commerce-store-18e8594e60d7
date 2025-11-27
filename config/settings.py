@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     # Third-party apps
     'rest_framework',
+    'rest_framework.authtoken',
     'django_redis',
     # Application
     'app.apps.AppConfig',
@@ -63,14 +64,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-
 DATABASES = {
     'default': {
         **env.db('DATABASE_URL', default='postgres://dbuser:dbpassword@db:5432/appdb'),
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
     }
 }
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -86,7 +85,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 LANGUAGE_CODE = 'en-us'
 
@@ -116,7 +114,6 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
 }
 
-
 CACHES = {'default': env.cache('CACHE_URL', default='redis://localhost:6379/0')}
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
@@ -129,7 +126,6 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_DEFAULT_QUEUE = env('CELERY_DEFAULT_QUEUE', default='default')
 CELERY_BEAT_SCHEDULE = {}
-
 
 LOGGING = {
     'version': 1,

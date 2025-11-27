@@ -2,6 +2,7 @@ import pytest
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 
 from app.models import Category, CustomerProfile, Product, SupplierProfile
 
@@ -60,3 +61,17 @@ def test_analytics_endpoint(authenticated_api_client):
     assert resp.status_code == status.HTTP_200_OK
     report = resp.json()
     assert any(row['name'] == 'ItemAnalytics' for row in report)
+
+
+def test_token_auth_access(db):
+    user = User.objects.create_user(username='tokuser', password='tokpw')
+    from rest_framework.test import APIClient
+
+    client = APIClient()
+    token = Token.objects.create(user=user)
+    client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+    cat = Category.objects.create(name='Spoons')
+    url = reverse('api:category-list')
+    resp = client.get(url)
+    assert resp.status_code == 200
+    assert resp.json()['results'][0]['name'] == 'Spoons'
