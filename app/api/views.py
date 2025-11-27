@@ -1,7 +1,19 @@
 from django.db import DatabaseError, connection
-from rest_framework import status
+from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from app.models import Category, CustomerProfile, Order, Product, SupplierProfile
+from app.services import CustomerProfileService, OrderService
+
+from .serializers import (
+    CategorySerializer,
+    CustomerProfileSerializer,
+    OrderSerializer,
+    ProductSerializer,
+    SupplierProfileSerializer,
+)
 
 
 class HealthCheckView(APIView):
@@ -13,3 +25,45 @@ class HealthCheckView(APIView):
         except DatabaseError as e:
             return Response({'status': 'error', 'db': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response({'status': 'ok'}, status=status.HTTP_200_OK)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+class SupplierProfileViewSet(viewsets.ModelViewSet):
+    queryset = SupplierProfile.objects.all()
+    serializer_class = SupplierProfileSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+class CustomerProfileViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CustomerProfile.objects.select_related('user').all()
+    serializer_class = CustomerProfileSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.select_related('customer').prefetch_related('items').all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def create(self, request, *args, **kwargs):
+        profile = CustomerProfileService.get_profile_by_user(request.user)
+        if not profile:
+            return Response({'error': 'No customer profile.'}, status=status.HTTP_400_BAD_REQUEST)
+        items = request.data.get('items', [])
+        try:
+            order = OrderService.place_order(profile, items=items)
+            serializer = self.get_serializer(order)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
